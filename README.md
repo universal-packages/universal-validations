@@ -31,7 +31,9 @@ console.log(await UserValidation.validate({ name: 'sm' }))
 // > { errors: { name: ['name failed rightNameSize validation'] }, valid: false }
 ```
 
-## @Validator
+## Decorators
+
+#### **`@Validator(property: string, [options])`**
 
 The validator decorator enable a class method to act as a validator, the method should return a boolean to tell teh validation if the property is valid or not. The first argument of the decorator is the property to be validated.
 
@@ -57,7 +59,7 @@ console.log(await UserValidation.validate({ name: 50 }))
 // > { errors: { name: ['name failed isAString validation', 'name failed rightNameSize validation'] }, valid: false }
 ```
 
-### Options
+#### Options
 
 - **`inverse`** `Boolean`
   Inverts the validator validity of the method returns true the property is invalid.
