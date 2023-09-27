@@ -1,4 +1,4 @@
-import { ValidatorOptions, ValidatorRecords } from './Validations.types'
+import { ValidatorOptions, ValidatorRecords } from './types'
 
 export default function Validator(property: string, options?: ValidatorOptions): (target: any, methodName: string, descriptor: PropertyDescriptor) => PropertyDescriptor {
   return (target: any, methodName: string, descriptor: PropertyDescriptor): PropertyDescriptor => {

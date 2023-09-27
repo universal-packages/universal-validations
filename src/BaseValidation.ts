@@ -1,4 +1,4 @@
-import { ValidationResult, ValidatorRecords } from './Validations.types'
+import { ValidationResult, ValidatorRecords } from './types'
 
 export default class BaseValidation {
   private __validatorRecords: ValidatorRecords
