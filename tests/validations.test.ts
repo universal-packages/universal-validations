@@ -127,6 +127,7 @@ describe('validations', (): void => {
       multiple: 'right multiple',
       inverse: 'wrong inverse',
       message: 'right message',
+      optional: null,
       priority: 50
     })
 

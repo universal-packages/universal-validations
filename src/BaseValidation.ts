@@ -29,7 +29,7 @@ export default class BaseValidation {
           for (let k = 0; k < priorityValidations.length; k++) {
             const currentValidation = priorityValidations[k]
 
-            if (subjectValue === undefined && currentValidation.options.optional) {
+            if ((subjectValue === undefined || subjectValue === null) && currentValidation.options.optional) {
               activeOptional = true
             } else {
               const validatorValid = await this[currentValidation.methodName](subject[currentProperty], subject)

@@ -81,7 +81,7 @@ console.log(await UserValidation.validate({ name: 50 }))
   ```
 
 - **`optional`** `Boolean`
-  The validation will run only if the property is set (not undefined)
+  The validation will run only if the property is set (not undefined nor null).
 
   ```js
   @Validator('name', { optional: true })
