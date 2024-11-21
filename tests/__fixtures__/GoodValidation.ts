@@ -45,4 +45,9 @@ export default class GoodValidation extends BaseValidation {
   public priority2B(subject: any): boolean {
     return subject < 100
   }
+
+  @Validator('initial-value', { optional: true })
+  public initialValue(subject: any, initialValue: any): boolean {
+    return subject === initialValue
+  }
 }

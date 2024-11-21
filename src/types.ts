@@ -1,7 +1,3 @@
-export interface ValidationsOptions {
-  validationsLocation: string
-}
-
 export interface ValidationResult {
   errors: { [name: string]: string[] }
   valid: boolean

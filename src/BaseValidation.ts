@@ -1,10 +1,15 @@
 import { ValidationResult, ValidatorRecords } from './types'
 
 export default class BaseValidation {
+  public readonly initialValues: Record<string, any>
   private __validatorRecords: ValidatorRecords
 
-  public static async validate(subject: Record<string, any>): Promise<ValidationResult> {
-    return new this().validate(subject)
+  public constructor(initialValues?: Record<string, any>) {
+    this.initialValues = initialValues || {}
+  }
+
+  public static async validate(subject: Record<string, any>, initialValues?: Record<string, any>): Promise<ValidationResult> {
+    return new this(initialValues).validate(subject)
   }
 
   public async validate(subject: Record<string, any>): Promise<ValidationResult> {
@@ -16,6 +21,7 @@ export default class BaseValidation {
     for (let i = 0; i < propertiesToValidate.length; i++) {
       const currentProperty = propertiesToValidate[i]
       const subjectValue = subject[currentProperty]
+      const initialSubjectValue = this.initialValues[currentProperty]
       const currentValidatorRecord = this.__validatorRecords[currentProperty]
       const sortedPriorities = Array.from(currentValidatorRecord.priorities).sort()
       let propertyValid = true
@@ -32,7 +38,7 @@ export default class BaseValidation {
             if ((subjectValue === undefined || subjectValue === null) && currentValidation.options.optional) {
               activeOptional = true
             } else {
-              const validatorValid = await this[currentValidation.methodName](subject[currentProperty], subject)
+              const validatorValid = await this[currentValidation.methodName](subject[currentProperty], initialSubjectValue, subject)
               const finalValidity = currentValidation.options.inverse ? !validatorValid : validatorValid
 
               if (!finalValidity) {

@@ -31,6 +31,28 @@ console.log(await UserValidation.validate({ name: 'sm' }))
 // > { errors: { name: ['name failed rightNameSize validation'] }, valid: false }
 ```
 
+### Initial values
+
+You can pass initial values so that you can reference them in your validators, for example when you don't want to perform heavy validations on values that were already validated.
+
+```js
+import { BaseValidation, Validator } from '@universal-packages/validations'
+
+export default class UpdateUserValidation extends BaseValidation {
+  @Validator('email')
+  alreadyInDb(value, initialName) {
+    if (value === initialName) return true
+    return !await db.exists({ email: value })
+  }
+}
+
+const validation = new UpdateUserValidation({ name: 'email' })
+
+console.log(await validation.validate({ name: 'email' }))
+
+// > { errors: {}, valid: true }
+```
+
 ## Decorators
 
 #### **`@Validator(property: string, [options])`**
@@ -70,6 +92,7 @@ console.log(await UserValidation.validate({ name: 50 }))
     return value === 'ugly'
   }
   ```
+
 - **`message`** `String`
   When the validation fails set the error with a custom message.
 
@@ -91,9 +114,9 @@ console.log(await UserValidation.validate({ name: 50 }))
   ```
 
 - **`priority`** `Number`
-   The priority level for the validation, if a validation with a lower number fails validations with a upper number will not run, but all validations in the same priority will run.
+  The priority level for the validation, if a validation with a lower number fails validations with a upper number will not run, but all validations in the same priority will run.
 
-   Use this so validations don't throw an error reading an unexpected type.
+  Use this so validations don't throw an error reading an unexpected type.
 
   ```js
   @Validator('name')

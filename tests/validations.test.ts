@@ -31,6 +31,21 @@ describe('validations', (): void => {
           ]
         },
         priorities: new Set([0, 1])
+      },
+      'initial-value': {
+        validationsByPriority: {
+          '0': [
+            {
+              methodName: 'initialValue',
+              options: {
+                message: 'initial-value failed initialValue validation',
+                optional: true,
+                priority: 0
+              }
+            }
+          ]
+        },
+        priorities: new Set([0])
       }
     })
   })
@@ -167,5 +182,38 @@ describe('validations', (): void => {
     })
 
     expect(result).toEqual({ errors: { priority: ['priority failed priority2A validation'] }, valid: false })
+  })
+
+  it('validators can access initial values', async (): Promise<void> => {
+    const validation = new GoodValidation({ 'initial-value': 'Initial' })
+
+    let result = await validation.validate({
+      name: 'right name',
+      multiple: 'right multiple',
+      inverse: 'wrong inverse',
+      message: 'right message',
+      optional: 'right optional',
+      priority: 50,
+      'initial-value': 'Initial'
+    })
+
+    expect(result).toEqual({ errors: {}, valid: true })
+
+    result = await validation.validate({
+      name: 'right name',
+      multiple: 'right multiple',
+      inverse: 'wrong inverse',
+      message: 'right message',
+      optional: 'right optional',
+      priority: 50,
+      'initial-value': 'Not initial'
+    })
+
+    expect(result).toEqual({
+      errors: {
+        'initial-value': ['initial-value failed initialValue validation']
+      },
+      valid: false
+    })
   })
 })
