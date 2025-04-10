@@ -53,6 +53,61 @@ console.log(await validation.validate({ name: 'email' }))
 // > { errors: {}, valid: true }
 ```
 
+### Schema-based validation
+
+You can create validators that only run for specific validation schemas. This is useful when you want to have different validation rules for different operations (e.g., create, update, delete).
+
+```js
+import { BaseValidation, Validator } from '@universal-packages/validations'
+
+export default class UserValidation extends BaseValidation {
+  // This validator runs for all schemas (default)
+  @Validator('email')
+  isValidFormat(value) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+  }
+
+  // This validator only runs when the 'create' schema is specified
+  @Validator('email', { schema: 'create' })
+  isUniqueEmail(value) {
+    return !await db.exists({ email: value })
+  }
+
+  // This validator runs for both 'update' and 'reset' schemas
+  @Validator('password', { schema: ['update', 'reset'] })
+  isDifferentPassword(value, initialValue) {
+    return value !== initialValue
+  }
+}
+
+// Run default validators only (no schema-specific validators)
+console.log(await UserValidation.validate({ email: 'invalid' }))
+// > { errors: { email: ['email failed isValidFormat validation'] }, valid: false }
+
+// Run default validators and 'create' schema validators
+console.log(await UserValidation.validate({ email: 'existing@example.com' }, 'create'))
+// > { errors: { email: ['email failed isUniqueEmail validation'] }, valid: false }
+
+// Run default validators and multiple schema validators
+const validation = new UserValidation({ password: 'oldpass' })
+console.log(await validation.validate({ password: 'oldpass' }, ['update', 'reset']))
+// > { errors: { password: ['password failed isDifferentPassword validation'] }, valid: false }
+
+// When passing both initialValues and schema
+console.log(await UserValidation.validate(
+  { password: 'oldpass' },
+  { password: 'originalpass' },
+  'update'
+))
+// > { errors: { password: ['password failed isDifferentPassword validation'] }, valid: false }
+```
+
+When running validation:
+
+- Without a schema: Only validators without a schema option will run.
+- With a specific schema: All validators without a schema option AND validators with a matching schema will run.
+- With multiple schemas (array): All validators without a schema option AND validators matching ANY of the provided schemas will run.
+
 ## Decorators
 
 #### **`@Validator(property: string, [options])`**
@@ -127,6 +182,23 @@ console.log(await UserValidation.validate({ name: 50 }))
   @Validator('name', { priority: 1})
   containsWord(value) {
     return value.indexOf('word') !== -1
+  }
+  ```
+
+- **`schema`** `String | String[]`
+  Specifies that the validator should only run for specific validation schemas. If not provided, the validator runs for all schemas.
+
+  ```js
+  // Only runs when validating with the 'create' schema
+  @Validator('email', { schema: 'create' })
+  isUnique(value) {
+    return !userExists(value)
+  }
+
+  // Runs when validating with either 'update' or 'reset' schemas
+  @Validator('password', { schema: ['update', 'reset'] })
+  isDifferent(value, initialValue) {
+    return value !== initialValue
   }
   ```
 

@@ -8,6 +8,7 @@ export interface ValidatorOptions {
   message?: string
   optional?: boolean
   priority?: number
+  schema?: string | string[]
 }
 
 export interface ValidatorRecords {
