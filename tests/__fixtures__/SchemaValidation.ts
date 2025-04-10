@@ -17,6 +17,32 @@ export default class SchemaValidation extends BaseValidation {
     return subject !== 'taken@example.com'
   }
 
+  @Validator('email', { 
+    schema: { 
+      for: 'custom', 
+      options: { 
+        message: 'Email domain must be example.org for custom schema',
+        optional: true 
+      } 
+    } 
+  })
+  public customDomainEmail(subject: any): boolean {
+    return subject.endsWith('@example.org')
+  }
+
+  @Validator('email', { 
+    schema: [
+      { for: 'premium', options: { message: 'Premium users must use premium domain' } },
+      { for: 'admin', options: { message: 'Admins must use admin domain', priority: 2 } }
+    ]
+  })
+  public specialDomainEmail(subject: any): boolean {
+    if (subject.endsWith('@premium.example.com') || subject.endsWith('@admin.example.com')) {
+      return true
+    }
+    return false
+  }
+
   @Validator('password')
   public isPasswordString(subject: any): boolean {
     return typeof subject === 'string'

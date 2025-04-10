@@ -3,12 +3,17 @@ export interface ValidationResult {
   valid: boolean
 }
 
+export interface SchemaDescriptor {
+  for: string
+  options: Omit<ValidatorOptions, 'schema'>
+}
+
 export interface ValidatorOptions {
   inverse?: boolean
   message?: string
   optional?: boolean
   priority?: number
-  schema?: string | string[]
+  schema?: string | string[] | SchemaDescriptor | SchemaDescriptor[]
 }
 
 export interface ValidatorRecords {

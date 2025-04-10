@@ -78,6 +78,31 @@ export default class UserValidation extends BaseValidation {
   isDifferentPassword(value, initialValue) {
     return value !== initialValue
   }
+
+  // Schema descriptor with custom options for specific schema
+  @Validator('email', { 
+    schema: { 
+      for: 'custom', 
+      options: { 
+        message: 'Custom validation failed',
+        optional: true 
+      } 
+    } 
+  })
+  customValidation(value) {
+    return value.endsWith('@example.org')
+  }
+
+  // Multiple schema descriptors with different options for each
+  @Validator('email', { 
+    schema: [
+      { for: 'premium', options: { message: 'Premium users require special validation' } },
+      { for: 'admin', options: { message: 'Admin users require special validation', priority: 2 } }
+    ]
+  })
+  specialValidation(value) {
+    return value.includes('special')
+  }
 }
 
 // Run default validators only (no schema-specific validators)
@@ -100,6 +125,10 @@ console.log(await UserValidation.validate(
   'update'
 ))
 // > { errors: { password: ['password failed isDifferentPassword validation'] }, valid: false }
+
+// Using schema with custom options
+console.log(await UserValidation.validate({ email: 'user@gmail.com' }, 'custom'))
+// > { errors: { email: ['Custom validation failed'] }, valid: false }
 ```
 
 When running validation:
@@ -107,6 +136,42 @@ When running validation:
 - Without a schema: Only validators without a schema option will run.
 - With a specific schema: All validators without a schema option AND validators with a matching schema will run.
 - With multiple schemas (array): All validators without a schema option AND validators matching ANY of the provided schemas will run.
+
+#### Schema Descriptors
+
+Schema descriptors allow you to specify different validation options for different schemas:
+
+```js
+// Simple schema (string or string[])
+@Validator('email', { schema: 'create' })
+@Validator('email', { schema: ['create', 'update'] })
+
+// Schema descriptor with custom options
+@Validator('email', { 
+  schema: { 
+    for: 'custom',  // The schema name this applies to
+    options: {      // Override validator options for this schema
+      message: 'Custom error message for this schema',
+      optional: true,
+      priority: 2
+    } 
+  } 
+})
+
+// Multiple schema descriptors
+@Validator('email', { 
+  schema: [
+    { for: 'schema1', options: { message: 'Error for schema1' } },
+    { for: 'schema2', options: { optional: true } }
+  ] 
+})
+```
+
+Schema descriptor options override the default validator options when validating with the matching schema. The options that can be overridden include:
+- `message`: Custom error message for this schema
+- `optional`: Whether the field is optional for this schema
+- `priority`: Validation priority for this schema
+- `inverse`: Whether to invert the validation result for this schema
 
 ## Decorators
 

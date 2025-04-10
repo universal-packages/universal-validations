@@ -1,4 +1,4 @@
-import { ValidationResult, ValidatorRecords } from './types'
+import { SchemaDescriptor, ValidationResult, ValidatorOptions, ValidatorRecords } from './types'
 
 export default class BaseValidation {
   public readonly initialValues: Record<string, any>
@@ -56,21 +56,29 @@ export default class BaseValidation {
           for (let k = 0; k < priorityValidations.length; k++) {
             const currentValidation = priorityValidations[k]
             
-            // Skip validations that don't match the schema criteria
-            if (!this.shouldRunValidator(currentValidation.options.schema, schema)) {
+            // Check if validator should run and get schema-specific options if applicable
+            const schemaResult = this.shouldRunValidator(currentValidation.options.schema, schema)
+            
+            // Skip validation if schema doesn't match
+            if (schemaResult === false) {
               continue
             }
-
-            if ((subjectValue === undefined || subjectValue === null) && currentValidation.options.optional) {
+            
+            // Merge schema-specific options with the validator's default options if applicable
+            const validationOptions = typeof schemaResult === 'object' 
+              ? { ...currentValidation.options, ...schemaResult }
+              : currentValidation.options
+            
+            if ((subjectValue === undefined || subjectValue === null) && validationOptions.optional) {
               activeOptional = true
             } else {
               const validatorValid = await this[currentValidation.methodName](subject[currentProperty], initialSubjectValue, subject)
-              const finalValidity = currentValidation.options.inverse ? !validatorValid : validatorValid
+              const finalValidity = validationOptions.inverse ? !validatorValid : validatorValid
 
               if (!finalValidity) {
                 if (!errors[currentProperty]) errors[currentProperty] = []
 
-                errors[currentProperty].push(currentValidation.options.message)
+                errors[currentProperty].push(validationOptions.message || `${currentProperty} failed ${currentValidation.methodName} validation`)
 
                 valid = false
                 propertyValid = false
@@ -86,18 +94,35 @@ export default class BaseValidation {
     return { errors, valid }
   }
   
-  private shouldRunValidator(validatorSchema?: string | string[], requestedSchema?: string | string[]): boolean {
+  private shouldRunValidator(validatorSchema?: ValidatorOptions['schema'], requestedSchema?: string | string[]): boolean | ValidatorOptions {
     // If validator has no schema, it runs with all schemas (default validator)
     if (!validatorSchema) return true
     
     // If no schema was requested, only run validators without a specific schema
     if (!requestedSchema) return false
     
-    // Convert to arrays for easier handling
-    const validatorSchemas = Array.isArray(validatorSchema) ? validatorSchema : [validatorSchema]
+    // Convert requestedSchema to array for easier handling
     const requestedSchemas = Array.isArray(requestedSchema) ? requestedSchema : [requestedSchema]
     
-    // Run validator if any of its schemas match any of the requested schemas
-    return validatorSchemas.some(vs => requestedSchemas.includes(vs))
+    // Handle simple string or string[] schemas (backward compatibility)
+    if (typeof validatorSchema === 'string' || (Array.isArray(validatorSchema) && (validatorSchema.length === 0 || typeof validatorSchema[0] === 'string'))) {
+      const validatorSchemas = Array.isArray(validatorSchema) ? validatorSchema : [validatorSchema]
+      
+      // Run validator if any of its schemas match any of the requested schemas
+      return validatorSchemas.some(vs => requestedSchemas.includes(vs as string))
+    }
+    
+    // Handle SchemaDescriptor or SchemaDescriptor[]
+    const schemaDescriptors = Array.isArray(validatorSchema) ? validatorSchema : [validatorSchema]
+    
+    // Check if any of the schema descriptors match any of the requested schemas
+    for (const descriptor of schemaDescriptors as SchemaDescriptor[]) {
+      if (requestedSchemas.includes(descriptor.for)) {
+        // Return the schema-specific options to override the default validator options
+        return descriptor.options
+      }
+    }
+    
+    return false
   }
 }
