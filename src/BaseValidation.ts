@@ -9,25 +9,25 @@ export default class BaseValidation {
   }
 
   public static async validate(
-    subject: Record<string, any>, 
-    initialValuesOrSchema?: Record<string, any> | string | string[], 
+    subject: Record<string, any>,
+    initialValuesOrSchema?: Record<string, any> | string | string[],
     schema?: string | string[]
   ): Promise<ValidationResult> {
     // Determine if the second argument is a schema or initial values
-    let actualInitialValues: Record<string, any> | undefined;
-    let actualSchema: string | string[] | undefined;
+    let actualInitialValues: Record<string, any> | undefined
+    let actualSchema: string | string[] | undefined
 
     if (initialValuesOrSchema === undefined) {
-      actualInitialValues = undefined;
-      actualSchema = schema;
+      actualInitialValues = undefined
+      actualSchema = schema
     } else if (typeof initialValuesOrSchema === 'string' || Array.isArray(initialValuesOrSchema)) {
       // Second argument is actually a schema
-      actualInitialValues = undefined;
-      actualSchema = initialValuesOrSchema;
+      actualInitialValues = undefined
+      actualSchema = initialValuesOrSchema
     } else {
       // Second argument is initial values
-      actualInitialValues = initialValuesOrSchema;
-      actualSchema = schema;
+      actualInitialValues = initialValuesOrSchema
+      actualSchema = schema
     }
 
     return new this(actualInitialValues).validate(subject, actualSchema)
@@ -55,20 +55,16 @@ export default class BaseValidation {
         if (propertyValid || activeOptional) {
           for (let k = 0; k < priorityValidations.length; k++) {
             const currentValidation = priorityValidations[k]
-            
+
             // Check if validator should run and get schema-specific options if applicable
             const schemaResult = this.shouldRunValidator(currentValidation.options.schema, schema)
-            
+
             // Skip validation if schema doesn't match
-            if (schemaResult === false) {
-              continue
-            }
-            
+            if (schemaResult === false) continue
+
             // Merge schema-specific options with the validator's default options if applicable
-            const validationOptions = typeof schemaResult === 'object' 
-              ? { ...currentValidation.options, ...schemaResult }
-              : currentValidation.options
-            
+            const validationOptions = typeof schemaResult === 'object' ? { ...currentValidation.options, ...schemaResult } : currentValidation.options
+
             if ((subjectValue === undefined || subjectValue === null) && validationOptions.optional) {
               activeOptional = true
             } else {
@@ -93,36 +89,44 @@ export default class BaseValidation {
 
     return { errors, valid }
   }
-  
+
   private shouldRunValidator(validatorSchema?: ValidatorOptions['schema'], requestedSchema?: string | string[]): boolean | ValidatorOptions {
     // If validator has no schema, it runs with all schemas (default validator)
     if (!validatorSchema) return true
-    
+
     // If no schema was requested, only run validators without a specific schema
     if (!requestedSchema) return false
-    
+
     // Convert requestedSchema to array for easier handling
     const requestedSchemas = Array.isArray(requestedSchema) ? requestedSchema : [requestedSchema]
-    
-    // Handle simple string or string[] schemas (backward compatibility)
-    if (typeof validatorSchema === 'string' || (Array.isArray(validatorSchema) && (validatorSchema.length === 0 || typeof validatorSchema[0] === 'string'))) {
-      const validatorSchemas = Array.isArray(validatorSchema) ? validatorSchema : [validatorSchema]
-      
-      // Run validator if any of its schemas match any of the requested schemas
-      return validatorSchemas.some(vs => requestedSchemas.includes(vs as string))
+
+    // Handle string schema
+    if (typeof validatorSchema === 'string') {
+      return requestedSchemas.includes(validatorSchema)
     }
-    
-    // Handle SchemaDescriptor or SchemaDescriptor[]
-    const schemaDescriptors = Array.isArray(validatorSchema) ? validatorSchema : [validatorSchema]
-    
-    // Check if any of the schema descriptors match any of the requested schemas
-    for (const descriptor of schemaDescriptors as SchemaDescriptor[]) {
-      if (requestedSchemas.includes(descriptor.for)) {
+
+    // Handle SchemaDescriptor
+    if (!Array.isArray(validatorSchema) && typeof validatorSchema === 'object') {
+      if (requestedSchemas.includes(validatorSchema.for)) {
         // Return the schema-specific options to override the default validator options
-        return descriptor.options
+        return validatorSchema.options || {}
+      }
+      return false
+    }
+
+    // Handle mixed array of strings and SchemaDescriptors
+    if (Array.isArray(validatorSchema)) {
+      for (const item of validatorSchema) {
+        if (typeof item === 'string') {
+          if (requestedSchemas.includes(item)) {
+            return true
+          }
+        } else if (typeof item === 'object' && requestedSchemas.includes(item.for)) {
+          return item.options || {}
+        }
       }
     }
-    
+
     return false
   }
 }

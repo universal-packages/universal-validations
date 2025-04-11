@@ -62,4 +62,18 @@ export default class SchemaValidation extends BaseValidation {
   public validName(subject: any): boolean {
     return subject && subject.length >= 2
   }
+
+  @Validator('email', { 
+    schema: ['extra', { for: 'mixed', options: { message: 'Mixed schema validation failed' } }]
+  })
+  public mixedSchemaValidation(subject: any): boolean {
+    return subject.endsWith('@example.org')
+  }
+  
+  @Validator('email', { 
+    schema: { for: 'minimal' }
+  })
+  public domainValidation(subject: any): boolean {
+    return subject.endsWith('@example.org')
+  }
 } 

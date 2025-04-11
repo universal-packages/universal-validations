@@ -172,4 +172,35 @@ describe('schema validations', (): void => {
     expect(result.errors.email.length).toBeGreaterThanOrEqual(1)
     expect(result.valid).toBe(false)
   })
+
+  it('correctly handles mixed array of strings and schema descriptors', async (): Promise<void> => {
+    // Test using a mixed array of strings and schema descriptors
+    const result = await SchemaValidation.validate({
+      email: 'user@gmail.com',
+      password: 'validpassword'
+    }, 'mixed')
+
+    expect(result.errors.email).toContain('Mixed schema validation failed')
+    expect(result.valid).toBe(false)
+    
+    // Test with a valid email that passes the mixed schema validation
+    const validResult = await SchemaValidation.validate({
+      email: 'user@example.org',
+      password: 'validpassword'
+    }, 'mixed')
+
+    expect(validResult.valid).toBe(true)
+  })
+  
+  it('handles SchemaDescriptor with optional options property', async (): Promise<void> => {
+    // Test with a schema that uses a SchemaDescriptor without options
+    const result = await SchemaValidation.validate({
+      email: 'user@gmail.com',
+      password: 'validpassword'
+    }, 'minimal')
+
+    // Should use the default message from the validator
+    expect(result.errors.email).toContain('email failed domainValidation validation')
+    expect(result.valid).toBe(false)
+  })
 }) 

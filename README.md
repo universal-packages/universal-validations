@@ -150,7 +150,7 @@ Schema descriptors allow you to specify different validation options for differe
 @Validator('email', { 
   schema: { 
     for: 'custom',  // The schema name this applies to
-    options: {      // Override validator options for this schema
+    options: {      // Override validator options for this schema (optional)
       message: 'Custom error message for this schema',
       optional: true,
       priority: 2
@@ -164,6 +164,20 @@ Schema descriptors allow you to specify different validation options for differe
     { for: 'schema1', options: { message: 'Error for schema1' } },
     { for: 'schema2', options: { optional: true } }
   ] 
+})
+
+// Mixed array of strings and schema descriptors
+@Validator('email', {
+  schema: [
+    'create',
+    'update',
+    { for: 'custom', options: { message: 'Custom validation' } }
+  ]
+})
+
+// Schema descriptor with optional options
+@Validator('email', {
+  schema: { for: 'minimal' } // options is optional
 })
 ```
 
@@ -250,7 +264,7 @@ console.log(await UserValidation.validate({ name: 50 }))
   }
   ```
 
-- **`schema`** `String | String[]`
+- **`schema`** `String | SchemaDescriptor | (String | SchemaDescriptor)[]`
   Specifies that the validator should only run for specific validation schemas. If not provided, the validator runs for all schemas.
 
   ```js
@@ -264,6 +278,26 @@ console.log(await UserValidation.validate({ name: 50 }))
   @Validator('password', { schema: ['update', 'reset'] })
   isDifferent(value, initialValue) {
     return value !== initialValue
+  }
+  
+  // Using SchemaDescriptor to provide schema-specific options
+  @Validator('email', { 
+    schema: { for: 'custom', options: { message: 'Custom message' } } 
+  })
+  customValidation(value) {
+    return isCustomValid(value)
+  }
+  
+  // Using mixed array of strings and SchemaDescriptor objects
+  @Validator('email', { 
+    schema: [
+      'create', 
+      'update', 
+      { for: 'custom', options: { message: 'Custom message' } }
+    ]
+  })
+  mixedSchemaValidation(value) {
+    return isMixedSchemaValid(value)
   }
   ```
 

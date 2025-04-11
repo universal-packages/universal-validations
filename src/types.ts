@@ -5,7 +5,7 @@ export interface ValidationResult {
 
 export interface SchemaDescriptor {
   for: string
-  options: Omit<ValidatorOptions, 'schema'>
+  options?: Omit<ValidatorOptions, 'schema'>
 }
 
 export interface ValidatorOptions {
@@ -13,7 +13,7 @@ export interface ValidatorOptions {
   message?: string
   optional?: boolean
   priority?: number
-  schema?: string | string[] | SchemaDescriptor | SchemaDescriptor[]
+  schema?: string | SchemaDescriptor | (string | SchemaDescriptor)[]
 }
 
 export interface ValidatorRecords {
