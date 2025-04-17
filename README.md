@@ -187,11 +187,73 @@ Schema descriptor options override the default validator options when validating
 - `priority`: Validation priority for this schema
 - `inverse`: Whether to invert the validation result for this schema
 
+### Nested Validations
+
+You can validate nested objects by composing validation classes. This allows you to create reusable validation components for complex data structures.
+
+```js
+import { BaseValidation, Validator } from '@universal-packages/validations'
+
+// Define a validation class for location objects
+class LocationValidation extends BaseValidation {
+  @Validator('longitude')
+  validateLongitude(value) {
+    return typeof value === 'number' && value >= -180 && value <= 180
+  }
+
+  @Validator('latitude')
+  validateLatitude(value) {
+    return typeof value === 'number' && value >= -90 && value <= 90
+  }
+}
+
+// Use the location validation in a user validation class
+class UserValidation extends BaseValidation {
+  @Validator('name')
+  validateName(value) {
+    return typeof value === 'string' && value.length > 0
+  }
+
+  // Pass the validation class directly
+  @Validator('location', LocationValidation)
+  validateLocation(location) {
+    return location // Return the location object to be validated
+  }
+  
+  // Alternatively, use the validationClass option
+  @Validator('alternateLocation', { validationClass: LocationValidation, optional: true })
+  validateAlternateLocation(location) {
+    return location
+  }
+}
+
+// Validate a user with a nested location
+const result = await UserValidation.validate({
+  name: 'John',
+  location: {
+    longitude: 200, // Invalid: > 180
+    latitude: 45
+  }
+})
+
+console.log(result)
+// > {
+// >   errors: {
+// >     location: ['location-longitude failed validateLongitude validation']
+// >   },
+// >   valid: false
+// > }
+```
+
+#### Error messages for nested validations
+
+Error messages from nested validations are prefixed with the parent property name, allowing you to identify which nested property failed validation.
+
 ## Decorators
 
-#### **`@Validator(property: string, [options])`**
+#### **`@Validator(property: string, [options | validationClass])`**
 
-The validator decorator enable a class method to act as a validator, the method should return a boolean to tell teh validation if the property is valid or not. The first argument of the decorator is the property to be validated.
+The validator decorator enable a class method to act as a validator, the method should return a boolean to tell teh validation if the property is valid or not. The first argument of the decorator is the property to be validated. The second argument can be either options or a validation class for nested validation.
 
 You can use several methods to validate a single property:
 
@@ -261,6 +323,23 @@ console.log(await UserValidation.validate({ name: 50 }))
   @Validator('name', { priority: 1})
   containsWord(value) {
     return value.indexOf('word') !== -1
+  }
+  ```
+  
+- **`validationClass`** `Class`
+  Specifies a validation class to use for validating a nested object. The validation method should return the nested object to be validated.
+
+  ```js
+  // Pass the validation class as the second argument
+  @Validator('location', LocationValidation)
+  validateLocation(location) {
+    return location
+  }
+
+  // Or use the validationClass option
+  @Validator('location', { validationClass: LocationValidation, optional: true })
+  validateLocation(location) {
+    return location
   }
   ```
 

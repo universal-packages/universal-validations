@@ -1,4 +1,6 @@
 import GoodValidation from './__fixtures__/GoodValidation'
+import NestedValidation from './__fixtures__/NestedValidation'
+import LocationValidation from './__fixtures__/LocationValidation'
 
 describe('validations', (): void => {
   it('holds internally the validations to run on a subject', async (): Promise<void> => {
@@ -214,6 +216,109 @@ describe('validations', (): void => {
         'initial-value': ['initial-value failed initialValue validation']
       },
       valid: false
+    })
+  })
+
+  describe('nested validation', (): void => {
+    it('validates nested objects using validation classes', async (): Promise<void> => {
+      const result = await NestedValidation.validate({
+        name: 'valid-name',
+        location: {
+          longitude: 100,
+          latitude: 45
+        }
+      })
+
+      expect(result).toEqual({ errors: {}, valid: true })
+    })
+
+    it('returns errors for invalid nested objects with prefixed error messages', async (): Promise<void> => {
+      const result = await NestedValidation.validate({
+        name: 'valid-name',
+        location: {
+          longitude: 200, // Invalid: > 180
+          latitude: 45
+        }
+      })
+
+      expect(result).toEqual({
+        errors: {
+          location: ['location-longitude failed validateLongitude validation']
+        },
+        valid: false
+      })
+    })
+
+    it('returns errors for both parent and nested validations', async (): Promise<void> => {
+      const result = await NestedValidation.validate({
+        name: 'invalid-name',
+        location: {
+          longitude: 100,
+          latitude: 100 // Invalid: > 90
+        }
+      })
+
+      expect(result).toEqual({
+        errors: {
+          name: ['name failed validateName validation'],
+          location: ['location-latitude failed validateLatitude validation']
+        },
+        valid: false
+      })
+    })
+
+    it('allows optional nested objects', async (): Promise<void> => {
+      const result = await NestedValidation.validate({
+        name: 'valid-name',
+        location: {
+          longitude: 100,
+          latitude: 45
+        },
+        optionalLocation: null
+      })
+
+      expect(result).toEqual({ errors: {}, valid: true })
+    })
+
+    it('passes initial values to nested validations', async (): Promise<void> => {
+      // Create a location validation with initial values
+      const initialLocation = {
+        longitude: 100,
+        latitude: 45
+      }
+
+      // Create a nested validation with initial values for the location
+      const validation = new NestedValidation({
+        location: initialLocation
+      })
+
+      // Create a mock function to verify if validate gets called with correct params
+      const originalValidateMethod = LocationValidation.prototype.validate
+      let receivedInitialValues = null
+
+      try {
+        // Replace the validate method with a mock that captures the initial values
+        LocationValidation.prototype.validate = jest.fn(async function(subject, schema) {
+          // 'this' now refers to the instance
+          receivedInitialValues = this.initialValues
+          // Call the original method with the right context
+          return originalValidateMethod.call(this, subject, schema)
+        })
+
+        await validation.validate({
+          name: 'valid-name',
+          location: {
+            longitude: 100,
+            latitude: 45
+          }
+        })
+
+        // Verify the initial values were passed to the nested validation
+        expect(receivedInitialValues).toEqual(initialLocation)
+      } finally {
+        // Restore the original method
+        LocationValidation.prototype.validate = originalValidateMethod
+      }
     })
   })
 })

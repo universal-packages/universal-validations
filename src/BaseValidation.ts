@@ -1,4 +1,4 @@
-import { SchemaDescriptor, ValidationResult, ValidatorOptions, ValidatorRecords } from './types'
+import { ValidationResult, ValidatorOptions, ValidatorRecords } from './types'
 
 export default class BaseValidation {
   public readonly initialValues: Record<string, any>
@@ -68,16 +68,49 @@ export default class BaseValidation {
             if ((subjectValue === undefined || subjectValue === null) && validationOptions.optional) {
               activeOptional = true
             } else {
-              const validatorValid = await this[currentValidation.methodName](subject[currentProperty], initialSubjectValue, subject)
-              const finalValidity = validationOptions.inverse ? !validatorValid : validatorValid
+              if (validationOptions.validationClass) {
+                // Handle nested validation using the validation class
+                const ValidationClass = validationOptions.validationClass
+                const nestedInitialValues = initialSubjectValue || {}
+                
+                // Call the validation method to get the value to validate
+                const valueToValidate = await this[currentValidation.methodName](subjectValue, initialSubjectValue, subject)
+                
+                // Skip validation if the value is undefined/null and optional is set
+                if ((valueToValidate === undefined || valueToValidate === null) && validationOptions.optional) {
+                  activeOptional = true
+                  continue
+                }
+                
+                // Validate using the nested validation class
+                const nestedValidationResult = await ValidationClass.validate(valueToValidate, nestedInitialValues, schema)
+                
+                if (!nestedValidationResult.valid) {
+                  valid = false
+                  propertyValid = false
+                  
+                  if (!errors[currentProperty]) errors[currentProperty] = []
+                  
+                  // Add the property-prefixed error messages
+                  Object.entries(nestedValidationResult.errors).forEach(([nestedKey, nestedErrors]) => {
+                    (nestedErrors as string[]).forEach(error => {
+                      errors[currentProperty].push(`${currentProperty}-${error}`)
+                    })
+                  })
+                }
+              } else {
+                // Regular validation
+                const validatorValid = await this[currentValidation.methodName](subject[currentProperty], initialSubjectValue, subject)
+                const finalValidity = validationOptions.inverse ? !validatorValid : validatorValid
 
-              if (!finalValidity) {
-                if (!errors[currentProperty]) errors[currentProperty] = []
+                if (!finalValidity) {
+                  if (!errors[currentProperty]) errors[currentProperty] = []
 
-                errors[currentProperty].push(validationOptions.message || `${currentProperty} failed ${currentValidation.methodName} validation`)
+                  errors[currentProperty].push(validationOptions.message || `${currentProperty} failed ${currentValidation.methodName} validation`)
 
-                valid = false
-                propertyValid = false
+                  valid = false
+                  propertyValid = false
+                }
               }
             }
           }
