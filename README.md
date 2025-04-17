@@ -215,7 +215,7 @@ class UserValidation extends BaseValidation {
   }
 
   // Pass the validation class directly
-  @Validator('location', LocationValidation)
+  @Validator('location', LocationValidation, 'schema-supported-by-validation-class')
   validateLocation(location) {
     return location // Return the location object to be validated
   }
