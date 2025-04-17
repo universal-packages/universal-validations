@@ -1,3 +1,4 @@
+import { SchemaNestedValidation } from './__fixtures__/NestedValidation'
 import SchemaValidation from './__fixtures__/SchemaValidation'
 
 describe('schema validations', (): void => {
@@ -244,5 +245,28 @@ describe('schema validations', (): void => {
     // Should use the default message from the validator
     expect(result.errors.email).toContain('email failed domainValidation validation')
     expect(result.valid).toBe(false)
+  })
+
+  it('handles schema validation with nested validation classes', async (): Promise<void> => {
+    const result = await SchemaNestedValidation.validate({
+      name: 'valid-name',
+      schema: {
+        name: 'valid-name',
+        email: 'taken@example.com',
+        password: 'validpassword'
+      }
+    })
+
+    expect(result).toEqual({
+      errors: {
+        schema: {
+          errors: {
+            email: ['email failed uniqueEmail validation']
+          },
+          valid: false
+        }
+      },
+      valid: false
+    })
   })
 })

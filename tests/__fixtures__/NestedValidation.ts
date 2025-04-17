@@ -1,8 +1,8 @@
 import { BaseValidation, Validator } from '../../src'
 import LocationValidation from './LocationValidation'
+import SchemaValidation from './SchemaValidation'
 import TagValidation from './TagValidation'
 
-// Validation with location
 export class LocationNestedValidation extends BaseValidation {
   @Validator('name')
   public validateName(subject: any): boolean {
@@ -15,8 +15,7 @@ export class LocationNestedValidation extends BaseValidation {
   }
 }
 
-// Validation with optional location
-export class OptionalLocationValidation extends BaseValidation {
+export class OptionalLocationNestedValidation extends BaseValidation {
   @Validator('name')
   public validateName(subject: any): boolean {
     return subject === 'valid-name'
@@ -33,8 +32,7 @@ export class OptionalLocationValidation extends BaseValidation {
   }
 }
 
-// Validation with tags array
-export class TagsValidation extends BaseValidation {
+export class TagsNestedValidation extends BaseValidation {
   @Validator('name')
   public validateName(subject: any): boolean {
     return subject === 'valid-name'
@@ -43,5 +41,17 @@ export class TagsValidation extends BaseValidation {
   @Validator('tags', TagValidation)
   public validateTags(tags: any[]): any {
     return tags
+  }
+}
+
+export class SchemaNestedValidation extends BaseValidation {
+  @Validator('name')
+  public validateName(subject: any): boolean {
+    return subject === 'valid-name'
+  }
+
+  @Validator('schema', SchemaValidation, 'create')
+  public validateSchemaLocation(location: any): any {
+    return location
   }
 }

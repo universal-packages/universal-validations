@@ -76,6 +76,7 @@ export default class BaseValidation {
               if (validationOptions.validationClass) {
                 // Handle nested validation using the validation class
                 const ValidationClass = validationOptions.validationClass
+                const validationClassSchema = validationOptions.validationClassSchema
                 const nestedInitialValues = initialSubjectValue || {}
                 
                 // Call the validation method to get the value to validate
@@ -103,7 +104,7 @@ export default class BaseValidation {
                     const itemToValidate = item || {}
                     
                     // Validate the array item
-                    const itemValidationResult = await ValidationClass.validate(itemToValidate, itemInitialValue, schema)
+                    const itemValidationResult = await ValidationClass.validate(itemToValidate, itemInitialValue, validationClassSchema)
                     arrayValidationResults.push(itemValidationResult)
                     
                     if (!itemValidationResult.valid) {
@@ -120,7 +121,7 @@ export default class BaseValidation {
                   // Validate a single nested object
                   // Make sure valueToValidate is not null or undefined
                   const objectToValidate = valueToValidate || {}
-                  const nestedValidationResult = await ValidationClass.validate(objectToValidate, nestedInitialValues, schema)
+                  const nestedValidationResult = await ValidationClass.validate(objectToValidate, nestedInitialValues, validationClassSchema)
                   
                   if (!nestedValidationResult.valid) {
                     valid = false

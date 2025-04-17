@@ -1,7 +1,5 @@
 import GoodValidation from './__fixtures__/GoodValidation'
-import LocationValidation from './__fixtures__/LocationValidation'
-import { LocationNestedValidation, OptionalLocationValidation, TagsValidation } from './__fixtures__/NestedValidation'
-import TagValidation from './__fixtures__/TagValidation'
+import { LocationNestedValidation, OptionalLocationNestedValidation, TagsNestedValidation } from './__fixtures__/NestedValidation'
 
 describe('validations', (): void => {
   it('holds internally the validations to run on a subject', async (): Promise<void> => {
@@ -279,7 +277,7 @@ describe('validations', (): void => {
     })
 
     it('allows optional nested objects', async (): Promise<void> => {
-      const result = await OptionalLocationValidation.validate({
+      const result = await OptionalLocationNestedValidation.validate({
         name: 'valid-name',
         location: {
           longitude: 100,
@@ -292,7 +290,7 @@ describe('validations', (): void => {
     })
 
     it('validates arrays of nested objects', async (): Promise<void> => {
-      const result = await TagsValidation.validate({
+      const result = await TagsNestedValidation.validate({
         name: 'valid-name',
         tags: [{ name: 'valid' }, { name: 'valid' }]
       })
@@ -301,7 +299,7 @@ describe('validations', (): void => {
     })
 
     it('returns array of validation results for invalid array items', async (): Promise<void> => {
-      const result = await TagsValidation.validate({
+      const result = await TagsNestedValidation.validate({
         name: 'valid-name',
         tags: [{ name: 'invalid' }, { name: 'valid' }, { name: 'invalid' }]
       })

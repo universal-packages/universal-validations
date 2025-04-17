@@ -17,6 +17,7 @@ export interface ValidatorOptions {
   priority?: number
   schema?: string | SchemaDescriptor | (string | SchemaDescriptor)[]
   validationClass?: any
+  validationClassSchema?: string | string[]
 }
 
 export interface ValidatorRecords {
