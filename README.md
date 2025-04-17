@@ -239,15 +239,128 @@ const result = await UserValidation.validate({
 console.log(result)
 // > {
 // >   errors: {
-// >     location: ['location-longitude failed validateLongitude validation']
+// >     location: {
+// >       errors: {
+// >         longitude: ['longitude failed validateLongitude validation']
+// >       },
+// >       valid: false
+// >     }
 // >   },
 // >   valid: false
 // > }
 ```
 
-#### Error messages for nested validations
+#### Nested validation results
 
-Error messages from nested validations are prefixed with the parent property name, allowing you to identify which nested property failed validation.
+Error results from nested validations maintain their structure. When a nested validation fails, its entire validation result object is included in the parent's errors under the corresponding property key:
+
+```js
+{
+  valid: false,
+  errors: {
+    name: ['invalid-name'],
+    location: {
+      valid: false,
+      errors: {
+        latitude: ['invalid-latitude']
+      }
+    }
+  }
+}
+```
+
+#### Validating arrays of objects
+
+You can also validate arrays of objects using the same approach. The validation method simply needs to return an array, and the validation class will be applied to each item in the array:
+
+```js
+// Define a validation class for tag objects
+class TagValidation extends BaseValidation {
+  @Validator('name')
+  validateName(value) {
+    return value.length > 0 && value.length < 50
+  }
+}
+
+class ArticleValidation extends BaseValidation {
+  @Validator('title')
+  validateTitle(value) {
+    return typeof value === 'string' && value.length > 0
+  }
+
+  // Validate an array of tags
+  @Validator('tags', TagValidation)
+  validateTags(tags) {
+    return tags // Return the array to be validated
+  }
+}
+
+// Validate an article with an array of tags
+const result = await ArticleValidation.validate({
+  title: 'My Article',
+  tags: [
+    { name: '' },        // Invalid: empty name
+    { name: 'valid' },   // Valid
+    { name: 'x'.repeat(100) } // Invalid: too long
+  ]
+})
+
+console.log(result)
+// > {
+// >   errors: {
+// >     tags: [
+// >       {
+// >         errors: { name: ['name failed validateName validation'] },
+// >         valid: false
+// >       },
+// >       {
+// >         errors: {},
+// >         valid: true
+// >       },
+// >       {
+// >         errors: { name: ['name failed validateName validation'] },
+// >         valid: false
+// >       }
+// >     ]
+// >   },
+// >   valid: false
+// > }
+```
+
+#### Passing initial values to nested validations
+
+When you provide initial values to the parent validation class, the corresponding initial values for nested properties are passed to the nested validation instances:
+
+```js
+// Initial values with nested location
+const initialValues = {
+  name: 'John',
+  location: {
+    longitude: 100,
+    latitude: 45
+  },
+  tags: [
+    { name: 'initial-tag-1' },
+    { name: 'initial-tag-2' }
+  ]
+}
+
+// Create validation with initial values
+const validation = new UserValidation(initialValues)
+
+// Validate - initial values for location and tags will be passed to their respective validations
+const result = await validation.validate({
+  name: 'Jane',
+  location: {
+    longitude: 110,
+    latitude: 50
+  },
+  tags: [
+    { name: 'tag-1' },
+    { name: 'tag-2' }
+  ]
+})
+```
 
 ## Decorators
 

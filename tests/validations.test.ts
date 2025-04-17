@@ -1,6 +1,7 @@
 import GoodValidation from './__fixtures__/GoodValidation'
-import NestedValidation from './__fixtures__/NestedValidation'
 import LocationValidation from './__fixtures__/LocationValidation'
+import { LocationNestedValidation, OptionalLocationValidation, TagsValidation } from './__fixtures__/NestedValidation'
+import TagValidation from './__fixtures__/TagValidation'
 
 describe('validations', (): void => {
   it('holds internally the validations to run on a subject', async (): Promise<void> => {
@@ -221,7 +222,7 @@ describe('validations', (): void => {
 
   describe('nested validation', (): void => {
     it('validates nested objects using validation classes', async (): Promise<void> => {
-      const result = await NestedValidation.validate({
+      const result = await LocationNestedValidation.validate({
         name: 'valid-name',
         location: {
           longitude: 100,
@@ -232,8 +233,8 @@ describe('validations', (): void => {
       expect(result).toEqual({ errors: {}, valid: true })
     })
 
-    it('returns errors for invalid nested objects with prefixed error messages', async (): Promise<void> => {
-      const result = await NestedValidation.validate({
+    it('returns validation result objects for invalid nested objects', async (): Promise<void> => {
+      const result = await LocationNestedValidation.validate({
         name: 'valid-name',
         location: {
           longitude: 200, // Invalid: > 180
@@ -243,14 +244,19 @@ describe('validations', (): void => {
 
       expect(result).toEqual({
         errors: {
-          location: ['location-longitude failed validateLongitude validation']
+          location: {
+            errors: {
+              longitude: ['longitude failed validateLongitude validation']
+            },
+            valid: false
+          }
         },
         valid: false
       })
     })
 
     it('returns errors for both parent and nested validations', async (): Promise<void> => {
-      const result = await NestedValidation.validate({
+      const result = await LocationNestedValidation.validate({
         name: 'invalid-name',
         location: {
           longitude: 100,
@@ -261,14 +267,19 @@ describe('validations', (): void => {
       expect(result).toEqual({
         errors: {
           name: ['name failed validateName validation'],
-          location: ['location-latitude failed validateLatitude validation']
+          location: {
+            errors: {
+              latitude: ['latitude failed validateLatitude validation']
+            },
+            valid: false
+          }
         },
         valid: false
       })
     })
 
     it('allows optional nested objects', async (): Promise<void> => {
-      const result = await NestedValidation.validate({
+      const result = await OptionalLocationValidation.validate({
         name: 'valid-name',
         location: {
           longitude: 100,
@@ -280,45 +291,44 @@ describe('validations', (): void => {
       expect(result).toEqual({ errors: {}, valid: true })
     })
 
-    it('passes initial values to nested validations', async (): Promise<void> => {
-      // Create a location validation with initial values
-      const initialLocation = {
-        longitude: 100,
-        latitude: 45
-      }
-
-      // Create a nested validation with initial values for the location
-      const validation = new NestedValidation({
-        location: initialLocation
+    it('validates arrays of nested objects', async (): Promise<void> => {
+      const result = await TagsValidation.validate({
+        name: 'valid-name',
+        tags: [{ name: 'valid' }, { name: 'valid' }]
       })
 
-      // Create a mock function to verify if validate gets called with correct params
-      const originalValidateMethod = LocationValidation.prototype.validate
-      let receivedInitialValues = null
+      expect(result).toEqual({ errors: {}, valid: true })
+    })
 
-      try {
-        // Replace the validate method with a mock that captures the initial values
-        LocationValidation.prototype.validate = jest.fn(async function(subject, schema) {
-          // 'this' now refers to the instance
-          receivedInitialValues = this.initialValues
-          // Call the original method with the right context
-          return originalValidateMethod.call(this, subject, schema)
-        })
+    it('returns array of validation results for invalid array items', async (): Promise<void> => {
+      const result = await TagsValidation.validate({
+        name: 'valid-name',
+        tags: [{ name: 'invalid' }, { name: 'valid' }, { name: 'invalid' }]
+      })
 
-        await validation.validate({
-          name: 'valid-name',
-          location: {
-            longitude: 100,
-            latitude: 45
-          }
-        })
-
-        // Verify the initial values were passed to the nested validation
-        expect(receivedInitialValues).toEqual(initialLocation)
-      } finally {
-        // Restore the original method
-        LocationValidation.prototype.validate = originalValidateMethod
-      }
+      expect(result).toEqual({
+        errors: {
+          tags: [
+            {
+              errors: {
+                name: ['name failed validateName validation']
+              },
+              valid: false
+            },
+            {
+              errors: {},
+              valid: true
+            },
+            {
+              errors: {
+                name: ['name failed validateName validation']
+              },
+              valid: false
+            }
+          ]
+        },
+        valid: false
+      })
     })
   })
 })

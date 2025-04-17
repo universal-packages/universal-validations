@@ -34,10 +34,15 @@ export default class BaseValidation {
   }
 
   public async validate(subject: Record<string, any>, schema?: string | string[]): Promise<ValidationResult> {
+    // Ensure subject is an object, not undefined or null
+    if (subject === undefined || subject === null) {
+      subject = {}
+    }
+    
     const errors = {}
     let valid = true
 
-    const propertiesToValidate = Object.keys(this.__validatorRecords)
+    const propertiesToValidate = Object.keys(this.__validatorRecords || {})
 
     for (let i = 0; i < propertiesToValidate.length; i++) {
       const currentProperty = propertiesToValidate[i]
@@ -82,21 +87,46 @@ export default class BaseValidation {
                   continue
                 }
                 
-                // Validate using the nested validation class
-                const nestedValidationResult = await ValidationClass.validate(valueToValidate, nestedInitialValues, schema)
-                
-                if (!nestedValidationResult.valid) {
-                  valid = false
-                  propertyValid = false
+                // Handle array of objects to validate
+                if (Array.isArray(valueToValidate)) {
+                  const arrayValidationResults = []
+                  let anyInvalid = false
                   
-                  if (!errors[currentProperty]) errors[currentProperty] = []
+                  // Validate each item in the array
+                  for (let l = 0; l < valueToValidate.length; l++) {
+                    const item = valueToValidate[l]
+                    const itemInitialValue = Array.isArray(nestedInitialValues) && l < nestedInitialValues.length 
+                      ? nestedInitialValues[l] 
+                      : {}
+                    
+                    // Make sure item is not null or undefined
+                    const itemToValidate = item || {}
+                    
+                    // Validate the array item
+                    const itemValidationResult = await ValidationClass.validate(itemToValidate, itemInitialValue, schema)
+                    arrayValidationResults.push(itemValidationResult)
+                    
+                    if (!itemValidationResult.valid) {
+                      anyInvalid = true
+                    }
+                  }
                   
-                  // Add the property-prefixed error messages
-                  Object.entries(nestedValidationResult.errors).forEach(([nestedKey, nestedErrors]) => {
-                    (nestedErrors as string[]).forEach(error => {
-                      errors[currentProperty].push(`${currentProperty}-${error}`)
-                    })
-                  })
+                  if (anyInvalid) {
+                    valid = false
+                    propertyValid = false
+                    errors[currentProperty] = arrayValidationResults
+                  }
+                } else {
+                  // Validate a single nested object
+                  // Make sure valueToValidate is not null or undefined
+                  const objectToValidate = valueToValidate || {}
+                  const nestedValidationResult = await ValidationClass.validate(objectToValidate, nestedInitialValues, schema)
+                  
+                  if (!nestedValidationResult.valid) {
+                    valid = false
+                    propertyValid = false
+                    errors[currentProperty] = nestedValidationResult
+                  }
                 }
               } else {
                 // Regular validation

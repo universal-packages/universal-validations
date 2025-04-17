@@ -1,5 +1,7 @@
 export interface ValidationResult {
-  errors: { [name: string]: string[] }
+  errors: { 
+    [name: string]: string[] | ValidationResult | ValidationResult[]
+  }
   valid: boolean
 }
 
